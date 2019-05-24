@@ -1,0 +1,4 @@
+
+boto
+https://github.com/loris-imageserver/loris.git
+
