@@ -7,7 +7,17 @@ config = {
     u'impl': 'hxloris.s3resolver.S3Resolver',
     u'cache_root': '/var/tmp/loris',
     u'user_extra_info': False,
-    u'bucket_map': '{"iiif": "bucket-iiif", "loris": "bucket-loris"}',
+    u'bucket_map': '''
+    {
+        "iiif": {
+            "bucket": "bucket-iiif",
+            "key_prefix": "hx"
+        },
+        "loris": {
+            "bucket": "bucket-loris"
+        }
+    }
+    '''
 }
 
 
@@ -16,7 +26,7 @@ def test_config_bucket_map():
 
     assert r.has_bucket_map
     assert 'iiif' in r.bucket_map
-    assert r.bucket_map['iiif'] == 'bucket-iiif'
+    assert r.bucket_map['iiif']['bucket'] == 'bucket-iiif'
 
 
 def test_bucket_from_ident_ok():
@@ -25,6 +35,7 @@ def test_bucket_from_ident_ok():
     b, k = r.s3bucket_from_ident(
         'iiif/image.jpg/region/size/rotation/default.jpg')
     assert b == 'bucket-iiif'
+    assert k == 'hx/image.jpg/region/size/rotation/default.jpg'
 
     b, k = r.s3bucket_from_ident(
         'its_not_a_bucket/image.jpg/region/size/rotation/default.jpg')

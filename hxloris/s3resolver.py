@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+#
+# s3resolver copied from:
+#   https://github.com/Harvard-ATG/loris/blob/development/loris/s3resolver.py
+#
+
 import boto
 import json
 import logging
@@ -17,8 +22,8 @@ class S3Resolver(_AbstractResolver):
     """Resolver for images coming from AWS S3 bucket.
 
     The config dictionary MUST contain
-     * `cache_root`, which is the absolute path to the directory where source images
-        should be cached.
+     * `cache_root`, which is the absolute path to the directory where source
+        images should be cached.
     """
     def __init__(self, config):
         super(S3Resolver, self).__init__(config)
@@ -140,7 +145,16 @@ class S3Resolver(_AbstractResolver):
 
         # check if bucketname actually means something different
         if (self.has_bucket_map and bucketname in self.bucket_map):
-            bucketname = self.bucket_map[bucketname]
+            s3bucket = self.bucket_map[bucketname]['bucket']
+            if 'key_prefix' in self.bucket_map[bucketname]:
+                s3key = '{}/{}'.format(
+                    self.bucket_map[bucketname]['key_prefix'], keyname)
+            else:
+                s3key = keyname
+            return s3bucket, s3key
+        else:
+            return bucketname, keyname
 
-        return bucketname, keyname
+        return s3bucket, s3key
+
 
