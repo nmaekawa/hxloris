@@ -27,7 +27,7 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    'boto',
+    'boto3',
     # hxloris depends on https://github.com/loris-imageserver/loris.git
     # but setup.py not always can install pkgs from git repos...
 ]

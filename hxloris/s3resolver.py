@@ -4,7 +4,7 @@
 #   https://github.com/Harvard-ATG/loris/blob/development/loris/s3resolver.py
 #
 
-import boto
+import boto3
 import glob
 import logging
 import os
@@ -60,6 +60,8 @@ class S3Resolver(_AbstractResolver):
             self.has_bucket_map = True
             logger.debug('s3 bucket_map: {}'.format(self.bucket_map))
 
+        self.s3 = boto3.resource('s3')
+
         logger.debug('loaded s3 resolver with config: {}'.format(config))
 
 
@@ -82,19 +84,19 @@ class S3Resolver(_AbstractResolver):
                 return False
 
             # check that we can get to this object on s3
-            s3 = boto.connect_s3()
             try:
-                bucket = s3.get_bucket(bucketname)
-            except boto.exception.S3ResponseError as e:
-                logger.error(e)
+                s3obj = self.s3.Object(bucketname, keyname)
+            except Exception as e:
+                logger.error('unable to access s3 object ({}:{}): {}'.format(
+                    bucketname, keyname, e))
                 return False
             else:
-                k = bucket.get_key(keyname)
-                if k is None:
-                    logger.warning('invalid key({}) for bucket({})'.format(
-                        keyname, bucketname))
+                if s3obj.content_length > 0:
+                    return True
+                else:
+                    logger.warning('empty s3 object ({}:{})'.format(
+                        bucketname, keyname))
                     return False
-                return True
 
 
     def get_format(self, ident, potential_format):
@@ -152,17 +154,17 @@ class S3Resolver(_AbstractResolver):
                 return files[0]
         return None
 
-    def cache_file_extension(self, ident, key_object):
-        if hasattr(key_object, 'content_type'):
+    def cache_file_extension(self, ident, s3obj):
+        if hasattr(s3obj, 'content_type'):
             try:
                 extension = self.get_format(
                     ident,
-                    constants.FORMATS_BY_MEDIA_TYPE[key_object.content_type]
+                    constants.FORMATS_BY_MEDIA_TYPE[s3obj.content_type]
                 )
             except KeyError:
                 logger.warn(
                     'wonky s3 resource content-type({}) for ident({})',
-                    key_object.content_type, ident)
+                    s3obj.content_type, ident)
                 # Attempt without the content-type
                 extension = self.get_format(ident, None)
         else:
@@ -176,24 +178,23 @@ class S3Resolver(_AbstractResolver):
         (bucketname, keyname) = self.s3resource_ident(ident)
         assert bucketname is not None
 
-        cache_dir = self.cache_dir_path(ident)
-        mkdir_p(cache_dir)
-
-        s3 = boto.connect_s3()
-        bucket = s3.get_bucket(bucketname)
-        key = bucket.get_key(keyname)
-        if key is None:
-            msg = 'Source image({}:{}) not found for identifier({})'.format(
-                bucketname, keyname, ident)
-            logger.warn(msg)
+        # check that we can get to this object on s3
+        try:
+            s3obj = self.s3.Object(bucketname, keyname)
+        except Exception as e:
+            msg = 'unable to access s3 object ({}:{}): {}'.format(
+                bucketname, keyname, e)
+            logger.error(msg)
             raise ResolverException(msg)
 
-        extension = self.cache_file_extension(ident, key)
+        cache_dir = self.cache_dir_path(ident)
+        mkdir_p(cache_dir)
+        extension = self.cache_file_extension(ident, s3obj)
         local_fp = os.path.join(cache_dir, "loris_cache." + extension)
 
         with tempfile.NamedTemporaryFile(
                 dir=cache_dir, delete=False) as tmp_file:
-            key.get_contents_to_file(tmp_file)
+            s3obj.download_fileobj(tmp_file)
 
         # Now rename the temp file to the desired file name if it still
         # doesn't exist (another process could have created it).
@@ -218,17 +219,17 @@ class S3Resolver(_AbstractResolver):
         fn = bits[1].rsplit('.')[0] + "." + self.auth_rules_ext
         rules_keyname = bits[0] + '/' + fn
         try:
-            rules_key = bucket.get_key(rules_keyname)
-            if rules_key is not None:
-                local_rules_fp = os.path.join(
-                    cache_dir, 'loris_cache.' + self.auth_rules_ext)
-                if not os.path.exists(local_rules_fp):
-                    rules_key.get_contents_to_filename(local_rules_fp)
+            rules_obj = self.s3.Object(bucketname, rules_keyname)
         except Exception as e:
             # no connection available?
             msg = 'ignoring rules file({}/{}) for ident({}): {}'.format(
                    bucketname, rules_keyname, ident, e)
             logger.warn(msg)
+        else:
+            local_rules_fp = os.path.join(
+                cache_dir, 'loris_cache.' + self.auth_rules_ext)
+            if not os.path.exists(local_rules_fp):
+                rules_obj.download_file(local_rules_fp)
 
         return local_fp
 
