@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class S3Resolver(_AbstractResolver):
-    '''Resolver for image files stored on aws s3 buckets.
+    """Resolver for image files stored on aws s3 buckets.
 
     The first call to `resolve()` copies the source image into a local cache;
     subsequent calls use local copy from the cache.
@@ -49,6 +49,7 @@ class S3Resolver(_AbstractResolver):
           [[[site2]]]
             bucket = 'bucket-for-site2'
             key_prefix = 'loris/other-images'
+
         ...
 
     an incoming request url and its corresponding s3 bucket/prefix:
@@ -61,7 +62,10 @@ class S3Resolver(_AbstractResolver):
     `bucket_map` is optional (as is `key_prefix`), but will always require a
     `bucket` to be in the request url. For example, the url below is invalid:
         http://localhost/image.jpg
-    '''
+
+    If it looks too similar to loris.resolver.SimpleHTTPResolver... you're right!
+    """
+
     def __init__(self, config):
         super(S3Resolver, self).__init__(config)
         self.default_format = self.config.get('default_format', None)
@@ -87,14 +91,17 @@ class S3Resolver(_AbstractResolver):
 
         # if not in us-east-1, set envvar AWS_DEFAULT_REGION to avoid extra
         # requests when downloading from s3
-        self.s3 = boto3.resource('s3')
+        session = boto3.session.Session()  # to be thread safe
+        self.s3 = session.resource('s3')
 
         logger.info('loaded s3 resolver with config: {}'.format(config))
 
 
     def is_resolvable(self, ident):
-        # request ident and return true if response status is less than 400
-        # check ident against regex
+        """ checks if ident contains a readable s3 object.
+
+        this generates a head request for the s3 object
+        """
         ident = unquote(ident)
 
         if not self._ident_regex_checker.is_allowed(ident):
@@ -129,8 +136,6 @@ class S3Resolver(_AbstractResolver):
 
 
     def get_format(self, ident, potential_format):
-        # always return default_format, but if none, returns potential_format
-        # and if none, then tries to get format_from_ident()
         if self.default_format is not None:
             return self.default_format
         elif potential_format is not None:
@@ -140,6 +145,7 @@ class S3Resolver(_AbstractResolver):
 
 
     def s3bucket_from_ident(self, ident):
+        """ returns tuple(buckename, keyname) parsed from ident."""
         key_parts = ident.split('/', 1)
         if len(key_parts) == 2:
             (bucket, partial_key) = key_parts
@@ -199,6 +205,7 @@ class S3Resolver(_AbstractResolver):
 
 
     def copy_to_cache(self, ident):
+        """ downloads image source file from s3, if not in cache already."""
         ident = unquote(ident)
 
         # get source image and write to temporary file

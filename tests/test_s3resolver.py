@@ -31,12 +31,12 @@ def test_config_bucket_map():
 def test_bucket_from_ident_ok():
     r = S3Resolver(config)
 
-    b, k = r.s3resource_ident(
+    b, k = r.s3bucket_from_ident(
         'iiif/image.jpg/region/size/rotation/default.jpg')
     assert b == 'bucket-iiif'
     assert k == 'hx/image.jpg/region/size/rotation/default.jpg'
 
-    b, k = r.s3resource_ident(
+    b, k = r.s3bucket_from_ident(
         'its_not_a_bucket/image.jpg/region/size/rotation/default.jpg')
     assert b == 'its_not_a_bucket'
 
@@ -48,7 +48,7 @@ def test_config_no_bucket_map():
     assert not r.has_bucket_map
     assert getattr(r, 'bucket_map', None) is None
 
-    b, k = r.s3resource_ident(
+    b, k = r.s3bucket_from_ident(
         'iiif/image.jpg/region/size/rotation/default.jpg')
     assert b == 'iiif'
 
