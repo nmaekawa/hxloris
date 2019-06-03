@@ -1,26 +1,25 @@
 hx add-ons to loris image server
 ===============================
 
-version number: 0.1.0
-author: nmaekawa
-
 Overview
 --------
 
-hx add-ons to loris image server
+hx add-ons to [loris image server](https://github.com/loris-imageserver/loris).
 
-Installation / Usage
---------------------
+Installation
+------------
 
-To install use pip:
+Clone the repo and install via pip:
 
-    $ pip install +http://github.com/nmakawa/hxloris.git
+    $> git clone https://github.com/nmaekawa/hxloris.git
+    $> cd hxloris
+    $> pip install -r requirements.txt
 
+If you already have [loris](https://github.com/loris-imageserver/loris)
+installed, then you can do:
 
-Or clone the repo:
+    $> pip install git+git://github.com/loris-imageserver/loris.git@9069177
 
-    $ git clone https://github.com/nmaekawa/hxloris.git
-    $ python setup.py install
 
 This resolver uses [boto3](https://github.com/boto/boto3).
 

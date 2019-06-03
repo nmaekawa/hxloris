@@ -30,11 +30,14 @@ requirements = [
     'boto3',
     # hxloris depends on https://github.com/loris-imageserver/loris.git
     # but setup.py not always can install pkgs from git repos...
+    #
+    # install via pip -r requirementst.txt
+    #
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
     'pytest',
+    'flake8',
 ]
 
 setup(
