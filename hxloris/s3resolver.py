@@ -56,8 +56,8 @@ class S3Resolver(_AbstractResolver):
         http://localhost/site1/this/that/image.jpg/:region/:size/:rotation/default.jpg
         s3://bucket-for-site1/loris/images/this/that/image.jpg
     or
-        http://localhost/site3/blah/image3.jpg/:region/:size/:rotation/default.jpg
-        s3://site3/blah/image3.jpg
+        http://localhost/site2/blah/image3.jpg/:region/:size/:rotation/default.jpg
+        s3://bucket-for-site2/loris/other-images/blah/image3.jpg
 
     `bucket_map` is optional (as is `key_prefix`), but will always require a
     `bucket` to be in the request url. For example, the url below is invalid:
@@ -89,9 +89,11 @@ class S3Resolver(_AbstractResolver):
             self.has_bucket_map = True
             logger.debug('s3 bucket_map: {}'.format(self.bucket_map))
 
-        # if not in us-east-1, set envvar AWS_DEFAULT_REGION to avoid extra
+        # boto3: if not in us-east-1, set envvar AWS_DEFAULT_REGION to avoid extra
         # requests when downloading from s3
-        session = boto3.session.Session()  # to be thread safe
+        # thread safe:
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/resources.html#multithreading-multiprocessing
+        session = boto3.session.Session()
         self.s3 = session.resource('s3')
 
         logger.info('loaded s3 resolver with config: {}'.format(config))
