@@ -23,7 +23,7 @@ def get_version(*file_paths):
 version = get_version(project_name, "__init__.py")
 
 
-with open('README.md') as readme_file:
+with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = [
