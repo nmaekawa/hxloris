@@ -1,5 +1,5 @@
 boto3
 # relying on clean setup.py without all the user/dir creation before
 # merging pull #449
-git+git://github.com/loris-imageserver/loris.git@9069177
+git+git://github.com/loris-imageserver/loris.git@v3.0.0
 
