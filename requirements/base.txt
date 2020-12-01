@@ -17,7 +17,7 @@ certifi==2018.1.18        # via loris, requests
 cffi==1.11.5              # via cryptography, loris
 chardet==3.0.4            # via loris, requests
 configobj==5.0.0          # via loris
-cryptography==2.7
+cryptography==3.2
 docutils==0.15.2          # via botocore
 idna==2.6                 # via cryptography, loris, requests
 jmespath==0.9.5           # via boto3, botocore
