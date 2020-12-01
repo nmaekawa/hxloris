@@ -23,7 +23,7 @@ idna==2.6                 # via cryptography, loris, requests
 jmespath==0.9.5           # via boto3, botocore
 git+git://github.com/loris-imageserver/loris.git@v3.0.0  # via -r base.in
 netaddr==0.7.19           # via loris
-pillow==6.2.0             # via loris
+pillow==7.1.0             # via loris
 pycparser==2.18           # via cffi, loris
 pyjwt==1.5.3              # via loris
 python-dateutil==2.8.1    # via botocore
