@@ -16,7 +16,6 @@ from loris.identifiers import CacheNamer
 from loris.identifiers import IdentRegexChecker
 from loris.loris_exception import ResolverException
 from loris.resolver import _AbstractResolver
-from loris.utils import mkdir_p
 from loris.utils import safe_rename
 from loris.img_info import ImageInfo
 
@@ -98,6 +97,10 @@ class S3Resolver(_AbstractResolver):
 
         logger.info('loaded s3 resolver with config: {}'.format(config))
 
+    def raise_404_for_ident(self, ident):
+        message = 'Source image not found for identifier: %s.' % (ident,)
+        logger.warn(message)
+        raise ResolverException(message)
 
     def is_resolvable(self, ident):
         """ checks if ident contains a readable s3 object.
@@ -224,7 +227,7 @@ class S3Resolver(_AbstractResolver):
 
         extension = self.cache_file_extension(ident, content_type)
         cache_dir = self.cache_dir_path(ident)
-        mkdir_p(cache_dir)
+        os.makedirs(cache_dir, exist_ok=True)
         local_fp = os.path.join(cache_dir, "loris_cache." + extension)
         with tempfile.NamedTemporaryFile(
                 dir=cache_dir, delete=False) as tmp_file:
@@ -273,14 +276,12 @@ class S3Resolver(_AbstractResolver):
 
 
     def resolve(self, app, ident, base_uri):
+        if not self.is_resolvable(ident):
+            self.raise_404_for_ident(ident)
         cached_file_path = self.cached_file_for_ident(ident)
         if not cached_file_path:
             cached_file_path = self.copy_to_cache(ident)
         format_ = self.get_format(cached_file_path, None)
-        uri = self.fix_base_uri(base_uri)
-        if self.use_extra_info:
-            extra = self.get_extra_info(ident, cached_file_path)
-        else:
-            extra = {}
-        return ImageInfo(app, uri, cached_file_path, format_, extra)
+        auth_rules = self.get_auth_rules(ident, cached_file_path)
+        return ImageInfo(app=app, src_img_fp=cached_file_path, src_format=format_, auth_rules=auth_rules)
 

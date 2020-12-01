@@ -16,7 +16,7 @@ Clone the repo and install via pip::
 If you already have loris_
 installed, then you can do::
 
-    $> pip install git+git://github.com/loris-imageserver/loris.git@9069177
+    $> pip install git+git://github.com/loris-imageserver/loris.git@v3.0.0
 
 
 This resolver uses boto3_.
