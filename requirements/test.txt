@@ -1,4 +1,7 @@
 # test
 -r base.txt
+pip-tools
+black
 flake8
+isort
 pytest
