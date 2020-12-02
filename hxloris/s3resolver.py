@@ -65,43 +65,45 @@ class S3Resolver(_AbstractResolver):
 
     def __init__(self, config):
         super(S3Resolver, self).__init__(config)
-        self.default_format = self.config.get('default_format', None)
+        self.default_format = self.config.get("default_format", None)
 
         self._ident_regex_checker = IdentRegexChecker(
-            ident_regex=self.config.get('ident_regex')
+            ident_regex=self.config.get("ident_regex")
         )
         self._cache_namer = CacheNamer()
 
-        if 'cache_root' in self.config:
-            self.cache_root = self.config['cache_root']
+        if "cache_root" in self.config:
+            self.cache_root = self.config["cache_root"]
         else:
-            message = ('Server Side Error: Configuration incomplete and '
-                       'cannot resolve. Missing setting for cache_root.')
+            message = (
+                "Server Side Error: Configuration incomplete and "
+                "cannot resolve. Missing setting for cache_root."
+            )
             logger.error(message)
             raise ResolverException(message)
 
         self.has_bucket_map = False
-        if 'bucket_map' in config:
-            self.bucket_map = config['bucket_map']
+        if "bucket_map" in config:
+            self.bucket_map = config["bucket_map"]
             self.has_bucket_map = True
-            logger.debug('s3 bucket_map: {}'.format(self.bucket_map))
+            logger.debug("s3 bucket_map: {}".format(self.bucket_map))
 
         # boto3: if not in us-east-1, set envvar AWS_DEFAULT_REGION to avoid extra
         # requests when downloading from s3
         # thread safe:
         # https://boto3.amazonaws.com/v1/documentation/api/latest/guide/resources.html#multithreading-multiprocessing
         session = boto3.session.Session()
-        self.s3 = session.resource('s3')
+        self.s3 = session.resource("s3")
 
-        logger.info('loaded s3 resolver with config: {}'.format(config))
+        logger.info("loaded s3 resolver with config: {}".format(config))
 
     def raise_404_for_ident(self, ident):
-        message = 'Source image not found for identifier: %s.' % (ident,)
+        message = "Source image not found for identifier: %s." % (ident,)
         logger.warn(message)
         raise ResolverException(message)
 
     def is_resolvable(self, ident):
-        """ checks if ident contains a readable s3 object.
+        """checks if ident contains a readable s3 object.
 
         this generates a head request for the s3 object
         """
@@ -126,17 +128,20 @@ class S3Resolver(_AbstractResolver):
                 s3obj = self.s3.Object(bucketname, keyname)
                 content_length = s3obj.content_length
             except Exception as e:
-                logger.error('unable to access s3 object ({}:{}): {}'.format(
-                    bucketname, keyname, e))
+                logger.error(
+                    "unable to access s3 object ({}:{}): {}".format(
+                        bucketname, keyname, e
+                    )
+                )
                 return False
             else:
                 if content_length > 0:
                     return True
                 else:
-                    logger.warning('empty s3 object ({}:{})'.format(
-                        bucketname, keyname))
+                    logger.warning(
+                        "empty s3 object ({}:{})".format(bucketname, keyname)
+                    )
                     return False
-
 
     def get_format(self, ident, potential_format):
         if self.default_format is not None:
@@ -146,24 +151,23 @@ class S3Resolver(_AbstractResolver):
         else:
             return self.format_from_ident(ident)
 
-
     def s3bucket_from_ident(self, ident):
         """ returns tuple(buckename, keyname) parsed from ident."""
-        key_parts = ident.split('/', 1)
+        key_parts = ident.split("/", 1)
         if len(key_parts) == 2:
             (bucket, partial_key) = key_parts
         else:
             raise ResolverException(
-                'Invalid identifier. Expected bucket/ident; got {}'.format(
-                    key_parts))
+                "Invalid identifier. Expected bucket/ident; got {}".format(key_parts)
+            )
 
         # check if bucketname actually means something different
-        if (self.has_bucket_map and bucket in self.bucket_map):
-            bucketname = self.bucket_map[bucket]['bucket']
-            if 'key_prefix' in self.bucket_map[bucket]:
+        if self.has_bucket_map and bucket in self.bucket_map:
+            bucketname = self.bucket_map[bucket]["bucket"]
+            if "key_prefix" in self.bucket_map[bucket]:
                 keyname = os.path.join(
-                    self.bucket_map[bucket]['key_prefix'],
-                    partial_key)
+                    self.bucket_map[bucket]["key_prefix"], partial_key
+                )
             else:
                 keyname = partial_key
             return (bucketname, keyname)
@@ -171,41 +175,38 @@ class S3Resolver(_AbstractResolver):
         else:  # what came in ident is the actual bucketname
             return (bucket, partial_key)
 
-
     def cache_dir_path(self, ident):
         # build dir path for ident file in cache
         return os.path.join(
-            self.cache_root,
-            CacheNamer.cache_directory_name(ident=ident))
-
+            self.cache_root, CacheNamer.cache_directory_name(ident=ident)
+        )
 
     def cached_file_for_ident(self, ident):
         # recover filepath for ident in cache
         cache_dir = self.cache_dir_path(ident)
         if os.path.exists(cache_dir):
-            files = glob.glob(os.path.join(cache_dir, 'loris_cache.*'))
+            files = glob.glob(os.path.join(cache_dir, "loris_cache.*"))
             if files:
                 return files[0]
         return None
-
 
     def cache_file_extension(self, ident, content_type=None):
         if content_type is not None:
             try:
                 extension = self.get_format(
-                    ident,
-                    constants.FORMATS_BY_MEDIA_TYPE[content_type]
+                    ident, constants.FORMATS_BY_MEDIA_TYPE[content_type]
                 )
             except KeyError:
                 logger.warn(
-                    'wonky s3 resource content-type({}) for ident({})',
-                    content_type, ident)
+                    "wonky s3 resource content-type({}) for ident({})",
+                    content_type,
+                    ident,
+                )
                 # Attempt without the content-type
                 extension = self.get_format(ident, None)
         else:
             extension = self.get_format(ident, None)
         return extension
-
 
     def copy_to_cache(self, ident):
         """ downloads image source file from s3, if not in cache already."""
@@ -218,8 +219,9 @@ class S3Resolver(_AbstractResolver):
             s3obj = self.s3.Object(bucketname, keyname)
             content_type = s3obj.content_type
         except Exception as e:
-            msg = 'no content_type for s3 object ({}:{}): {}'.format(
-                bucketname, keyname, e)
+            msg = "no content_type for s3 object ({}:{}): {}".format(
+                bucketname, keyname, e
+            )
             logger.error(msg)
             raise ResolverException(msg)
 
@@ -227,13 +229,13 @@ class S3Resolver(_AbstractResolver):
         cache_dir = self.cache_dir_path(ident)
         os.makedirs(cache_dir, exist_ok=True)
         local_fp = os.path.join(cache_dir, "loris_cache." + extension)
-        with tempfile.NamedTemporaryFile(
-                dir=cache_dir, delete=False) as tmp_file:
+        with tempfile.NamedTemporaryFile(dir=cache_dir, delete=False) as tmp_file:
             try:
                 self.s3.Bucket(bucketname).download_fileobj(keyname, tmp_file)
             except Exception as e:
-                msg = 'unable to access or save s3 object ({}:{}): {}'.format(
-                    bucketname, keyname, e)
+                msg = "unable to access or save s3 object ({}:{}): {}".format(
+                    bucketname, keyname, e
+                )
                 logger.error(msg)
                 raise ResolverException(msg)
 
@@ -244,34 +246,30 @@ class S3Resolver(_AbstractResolver):
         # existence between the existence check and the copy, it will be
         # overridden.
         if os.path.exists(local_fp):
-            logger.info(
-                'Another process downloaded src image {}'.format(local_fp))
+            logger.info("Another process downloaded src image {}".format(local_fp))
             os.remove(tmp_file.name)
         else:
             safe_rename(tmp_file.name, local_fp)
-            logger.info("Copied {}:{} to {}".format(
-                bucketname, keyname, local_fp))
+            logger.info("Copied {}:{} to {}".format(bucketname, keyname, local_fp))
 
         # Check for rules file associated with image file
         # These files are < 2k in size, so fetch in one go.
         # Assumes that the rules will be next to the image
         # cache_dir is image specific, so this is easy
         bits = os.path.split(keyname)  # === bash basename
-        fn = bits[1].rsplit('.')[0] + "." + self.auth_rules_ext
-        rules_keyname = bits[0] + '/' + fn
-        local_rules_fp = os.path.join(
-            cache_dir, 'loris_cache.' + self.auth_rules_ext)
+        fn = bits[1].rsplit(".")[0] + "." + self.auth_rules_ext
+        rules_keyname = bits[0] + "/" + fn
+        local_rules_fp = os.path.join(cache_dir, "loris_cache." + self.auth_rules_ext)
         try:
-            self.s3.Object(bucketname, rules_keyname).download_file(
-                local_rules_fp)
+            self.s3.Object(bucketname, rules_keyname).download_file(local_rules_fp)
         except Exception as e:
             # no connection available?
-            msg = 'ignoring rules file({}/{}) for ident({}): {}'.format(
-                   bucketname, rules_keyname, ident, e)
+            msg = "ignoring rules file({}/{}) for ident({}): {}".format(
+                bucketname, rules_keyname, ident, e
+            )
             logger.warn(msg)
 
         return local_fp
-
 
     def resolve(self, app, ident, base_uri):
         if not self.is_resolvable(ident):
@@ -281,5 +279,9 @@ class S3Resolver(_AbstractResolver):
             cached_file_path = self.copy_to_cache(ident)
         format_ = self.get_format(cached_file_path, None)
         auth_rules = self.get_auth_rules(ident, cached_file_path)
-        return ImageInfo(app=app, src_img_fp=cached_file_path, src_format=format_, auth_rules=auth_rules)
-
+        return ImageInfo(
+            app=app,
+            src_img_fp=cached_file_path,
+            src_format=format_,
+            auth_rules=auth_rules,
+        )
