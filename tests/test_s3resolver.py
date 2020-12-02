@@ -2,7 +2,6 @@
 
 from hxloris.s3resolver import S3Resolver
 
-
 config = {
     u'impl': 'hxloris.s3resolver.S3Resolver',
     u'cache_root': '/var/tmp/loris',

@@ -4,21 +4,19 @@
 #   https://github.com/Harvard-ATG/loris/blob/development/loris/s3resolver.py
 #
 
-import boto3
 import glob
 import logging
 import os
 import tempfile
 from urllib.parse import unquote
 
+import boto3
 from loris import constants
-from loris.identifiers import CacheNamer
-from loris.identifiers import IdentRegexChecker
+from loris.identifiers import CacheNamer, IdentRegexChecker
+from loris.img_info import ImageInfo
 from loris.loris_exception import ResolverException
 from loris.resolver import _AbstractResolver
 from loris.utils import safe_rename
-from loris.img_info import ImageInfo
-
 
 logger = logging.getLogger(__name__)
 
