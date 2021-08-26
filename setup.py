@@ -27,7 +27,7 @@ with open("README.rst") as readme_file:
 
 requirements = [
     "botocore<=1.18.18",
-    "boto3>=1.15.18",
+    "boto3~=1.15.18",
     # hxloris depends on https://github.com/loris-imageserver/loris.git
     # but setup.py not always can install pkgs from git repos...
     #
