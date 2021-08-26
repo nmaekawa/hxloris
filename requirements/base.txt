@@ -1,4 +1,4 @@
 git+git://github.com/loris-imageserver/loris.git@v3.1.0
-boto3
+boto3<1.16.0
 botocore<1.19.0  # restrict so urllib3 shared dependency (requests) does not clash
 
